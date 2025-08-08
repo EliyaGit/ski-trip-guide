@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dates & Budget · Wes Alpine Guide</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="nav">
+  <div class="brand">Wes Alpine Guide</div>
+  <a href="index.html">Home</a>
+  <a href="alta-badia.html">Alta Badia</a>
+  <a href="gurgl.html">Gurgl</a>
+  <a href="arc1950.html">Arc 1950</a>
+  <a href="cervinia.html">Cervinia</a>
+  <a href="livigno.html">Livigno</a>
+  <a href="compare-logistics.html">Dates & Budget</a>
+</div>
+
+<div class="container">
+<h1 class="hi">Dates & Budget Planner</h1>
+<p class="subtle">Target a 7-night trip (Sat→Sat or Sun→Sun) with 6 ski days. February is prime: great snow, longer days. Avoid school half-terms if you can.</p>
+
+<div class="card">
+  <h3>Pick your week</h3>
+  <div class="input-row">
+    <label>Suggested windows:
+      <select id="week">
+        <option value="2026-02-01">Feb 1–8, 2026 (quietest of the month)</option>
+        <option value="2026-02-08">Feb 8–15, 2026 (rising half-term traffic)</option>
+        <option value="2026-02-22">Feb 22–Mar 1, 2026 (post half-term, calmer)</option>
+      </select>
+    </label>
+    <span class="subtle">Tip: Avoid Feb 15–22 where UK/EU school breaks spike crowds.</span>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Crew & Rooms</h3>
+  <div class="input-row">
+    <label>People <input id="pax" type="number" value="6" min="1"></label>
+    <label>Rooms (double/twin) <input id="rooms" type="number" value="3" min="1"></label>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Budget Windows (per person, USD)</h3>
+  <p class="subtle">These are realistic ranges based on Feb pricing for 7 nights, 6-day pass, airport transfers, and normal restaurant habits. Flights shown for SF/NY groups separately. Toggle points assumptions below.</p>
+  <div class="input-row">
+    <label><input type="checkbox" id="usePoints" checked> Assume points offsets on flights (−50% SF / −60% NY)</label>
+    <label><input type="checkbox" id="hotelPoints"> Assume 1 free hotel night via credits/points (−1/7 of lodging)</label>
+  </div>
+  <div id="budgetTable"></div>
+  <p class="subtle">Notes: Gurgl & Cervinia have the most snow-sure altitude. Arc 1950 is the most train-friendly. Alta Badia wins for food. Livigno tends to be best value.</p>
+</div>
+
+<div class="card">
+  <h3>What’s included</h3>
+  <ul>
+    <li>Flights (economy): SF group → GVA/MXP; NY group → GVA/MXP/LYS.</li>
+    <li>Transfers: private/shared shuttle or train+funicular where it’s handy.</li>
+    <li>Lodging: mid-to-nice slope-side hotels or Arc 1950 residences (double occupancy).</li>
+    <li>Lift passes: 6-day adult.</li>
+    <li>Food & drink: breakfast, on-mountain lunches, dinners with drinks.</li>
+    <li>Extras: rental/demo skis for those not bringing gear, spa time.</li>
+  </ul>
+</div>
+</div>
+
+<script>
+const USD = v => '$'+Math.round(v).toLocaleString();
+
+// Flights (RT per person) before points:
+const flights = {
+  SF: { low: 950, high: 1300 },
+  NY: { low: 650, high: 900 }
+};
+
+// Transfers RT per person:
+const transfers = {
+  gurgl: { low: 140, high: 200 },
+  altabadia: { low: 160, high: 260 },
+  arc1950: { low: 110, high: 160 }, // rail+funicular
+  cervinia: { low: 110, high: 180 },
+  livigno: { low: 150, high: 240 }
+};
+
+// Lodging per room per night (mid-to-nice, slope-access):
+const hotel = {
+  gurgl: { low: 380, high: 520 },
+  altabadia: { low: 340, high: 480 },
+  arc1950: { low: 280, high: 420 }, // apt-style; per unit
+  cervinia: { low: 300, high: 450 },
+  livigno: { low: 240, high: 360 }
+};
+
+// Lift pass 6-day (adult) USD rough-converted
+const passes = {
+  gurgl: { peak: 505 },
+  altabadia: { peak: 410 },
+  arc1950: { peak: 425 },
+  cervinia: { peak: 505 },
+  livigno: { peak: 395 }
+};
+
+// Rentals + spa + incidentals per person for week
+const extras = { low: 180, high: 280 };
+
+const rows = [
+  {key:'gurgl', label:'Gurgl (AT)'},
+  {key:'altabadia', label:'Alta Badia (IT)'},
+  {key:'arc1950', label:'Arc 1950 (FR)'},
+  {key:'cervinia', label:'Cervinia (IT)'},
+  {key:'livigno', label:'Livigno (IT)'}
+];
+
+function calc(){
+  const pax = +document.getElementById('pax').value || 6;
+  const rooms = +document.getElementById('rooms').value || Math.ceil(pax/2);
+  const usePoints = document.getElementById('usePoints').checked;
+  const hotelPoints = document.getElementById('hotelPoints').checked;
+
+  let html = '<table class="table"><tr><th>Resort</th><th>SF flyers</th><th>NY flyers</th><th>Breakdown (per person)</th></tr>';
+
+  rows.forEach(r=>{
+    const hLow = hotel[r.key].low * 7 * (hotelPoints ? (6/7) : 1) / (rooms*2);
+    const hHigh = hotel[r.key].high * 7 * (hotelPoints ? (6/7) : 1) / (rooms*2);
+
+    const tLow = transfers[r.key].low, tHigh = transfers[r.key].high;
+    const p = passes[r.key].peak;
+    const eLow = extras.low, eHigh = extras.high;
+
+    const sfF = {low: flights.SF.low*(usePoints?0.5:1), high: flights.SF.high*(usePoints?0.5:1)};
+    const nyF = {low: flights.NY.low*(usePoints?0.4:1), high: flights.NY.high*(usePoints?0.4:1)};
+
+    const sfLow = sfF.low + tLow + hLow + p + eLow;
+    const sfHigh = sfF.high + tHigh + hHigh + p + eHigh;
+
+    const nyLow = nyF.low + tLow + hLow + p + eLow;
+    const nyHigh = nyF.high + tHigh + hHigh + p + eHigh;
+
+    html += `<tr><td><b>${r.label}</b></td>
+      <td class="output">${USD(sfLow)}–${USD(sfHigh)}</td>
+      <td class="output">${USD(nyLow)}–${USD(nyHigh)}</td>
+      <td class="subtle">Flights, transfers, hotel, 6-day pass, extras</td></tr>`;
+  });
+
+  html += '</table>';
+  document.getElementById('budgetTable').innerHTML = html;
+}
+calc();
+['pax','rooms','usePoints','hotelPoints','week'].forEach(id=>document.getElementById(id).addEventListener('change', calc));
+</script>
+
+<div class="footer subtle">Updated Aug 08, 2025</div>
+</body>
+</html>
